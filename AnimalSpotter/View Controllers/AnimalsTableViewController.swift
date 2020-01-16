@@ -12,9 +12,12 @@ class AnimalsTableViewController: UITableViewController {
     
     // MARK: - Properties
     
-    private var animalNames: [String] = []
-    
     let apiController = APIController()
+    private var animalNames: [String] = [] {
+        didSet {
+            tableView.reloadData()
+        }
+    }
     
     // MARK: - View Lifecycle
     
@@ -24,8 +27,7 @@ class AnimalsTableViewController: UITableViewController {
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        
-        // transition to login view if conditions require
+        // Transition to log in screen if there is no bearer token, meaning you are not logged in
         if apiController.bearer == nil {
             performSegue(withIdentifier: "LoginViewModalSegue", sender: self)
         }
@@ -39,8 +41,6 @@ class AnimalsTableViewController: UITableViewController {
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "AnimalCell", for: indexPath)
-
-        // Configure the cell...
         cell.textLabel?.text = animalNames[indexPath.row]
 
         return cell
@@ -49,16 +49,53 @@ class AnimalsTableViewController: UITableViewController {
     // MARK: - Actions
     
     @IBAction func getAnimals(_ sender: UIBarButtonItem) {
-        // fetch all animals from API
+        // If you don't care about the errors returned by the Result type.
+//        apiController.fetchAllAnimalNames { result in
+//            if let names = try? result.get() {
+//                DispatchQueue.main.async {
+//                    self.animalNames = names
+//                }
+//            }
+//        }
+        
+        // If you want to enumerate and show each kind of possible error
+        apiController.fetchAllAnimalNames { result in
+            do {
+                let names = try result.get()
+                DispatchQueue.main.async {
+                    self.animalNames = names
+                }
+            } catch {
+                if let error = error as? NetworkError {
+                    switch error {
+                    case .noBearer:
+                        print("No bearer exists")
+                    case .badData:
+                        print("No data received or data corrupted")
+                    case .noDecode:
+                        print("JSON could not be decoded")
+                    default:
+                        print("Other error occured, see log")
+                    }
+                }
+            }
+        }
     }
     
     // MARK: - Navigation
 
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "LoginViewModalSegue" {
             if let loginVC = segue.destination as? LoginViewController {
                 loginVC.apiController = apiController
+            }
+        }
+        
+        else if segue.identifier == "ShowAnimalDetailSegue" {
+            if let detailVC = segue.destination as? AnimalDetailViewController,
+                let indexPath = tableView.indexPathForSelectedRow {
+                detailVC.animalName = animalNames[indexPath.row]
+                detailVC.apiController = apiController
             }
         }
     }

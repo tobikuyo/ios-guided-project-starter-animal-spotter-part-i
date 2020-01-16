@@ -35,7 +35,8 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
     
     @IBAction func buttonTapped(_ sender: UIButton) {
         // Create a user
-        guard let username = usernameTextField.text,
+        guard let _ = apiController,
+            let username = usernameTextField.text,
             let password = passwordTextField.text,
             !username.isEmpty,
             !password.isEmpty else { return }
@@ -43,7 +44,6 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
         let user = User(username: username, password: password)
         
         // perform login or sign up operation based on loginType
-        
         if loginType == .signUp {
             signUp(with: user)
         } else {
@@ -53,7 +53,6 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
     
     func signUp(with user: User) {
         apiController?.signUp(with: user, completion: { (error) in
-            
             if let error = error {
                 NSLog("Error occured during sign up: \(error)")
             } else {
@@ -88,7 +87,6 @@ class LoginViewController: UIViewController, UITextFieldDelegate {
     }
     
     @IBAction func signInTypeChanged(_ sender: UISegmentedControl) {
-        
         if sender.selectedSegmentIndex == 0 {
             loginType = .signUp
             signInButton.setTitle("Sign Up", for: .normal)
